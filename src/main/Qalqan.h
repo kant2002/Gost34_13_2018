@@ -63,4 +63,4 @@ void Qalqan_encrypt_32_16v(uint8_t* clear, uint8_t* cipher, uint8_t* rkey);
 void Qalqan_decrypt_32_16(uint8_t* cipher, uint8_t* clear, uint8_t* rkey);
 
 void VerilogSBoxInit();
-void ShortTestVectors(FILE* f);
+void ShortTestVectors(FILE* f, FILE* src);

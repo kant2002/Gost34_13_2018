@@ -220,12 +220,20 @@ void ETestVectors(FILE* f)
     }
 }
 
-void ShortTestLin(FILE* f)
+void ShortTestLin(FILE* f, FILE* src)
 {
 #define BLEN_CNT 3
     uint8_t din[MAXBLOCKLEN], dout[MAXBLOCKLEN];
-    for (int i = 0; i < MAXBLOCKLEN; i++)
-        din[i] = rnext();
+    if (!src)
+    {
+        for (int i = 0; i < MAXBLOCKLEN; i++)
+            din[i] = rnext();
+    }
+    else
+    {
+        fread_s(din, MAXBLOCKLEN, sizeof(uint8_t), MAXBLOCKLEN, src);
+    }
+
     int blen_vals[BLEN_CNT] = { 16, 32, 64 };
     fprintf(f, "Linear operation:\n");
     for (int ex = 0; ex < BLEN_CNT; ex++)
@@ -243,13 +251,24 @@ void ShortTestLin(FILE* f)
 #undef BLEN_CNT
 }
 
-void ShortTestSBox(FILE* f)
+void ShortTestSBox(FILE* f, FILE* src)
 {
     uint8_t din[MAXBLOCKLEN], dout[MAXBLOCKLEN];
-    for (int i = 0; i < MAXBLOCKLEN; i++)
+    if (!src)
     {
-        din[i] = rnext();
-        dout[i] = sb[din[i]];
+        for (int i = 0; i < MAXBLOCKLEN; i++)
+        {
+            din[i] = rnext();
+            dout[i] = sb[din[i]];
+        }
+    }
+    else
+    {
+        fread_s(din, MAXBLOCKLEN, sizeof(uint8_t), MAXBLOCKLEN, src);
+        for (int i = 0; i < MAXBLOCKLEN; i++)
+        {
+            dout[i] = sb[din[i]];
+        }
     }
     fprintf(f, "Nonlinear operation:\n");
     fprintf(f, "Input (%d bits):  ", MAXBLOCKLEN * 8);
@@ -261,27 +280,42 @@ void ShortTestSBox(FILE* f)
     fprintf(f, "\n\n");
 }
 
-void ShortTestKExp(FILE* f)
+void ShortTestKExp(FILE* f, FILE* src)
 {
     uint8_t key[MAXKEYLEN] = { 0 }, rkey[RNDS(MAXKEYLEN) * MAXBLOCKLEN];
-    for (int i = 0; i < MAXKEYLEN; i++)
-        key[i] = rnext();
+    if (!src)
+    {
+        for (int i = 0; i < MAXKEYLEN; i++)
+            key[i] = rnext();
+    }
+    else
+    {
+        fread_s(key, MAXKEYLEN, sizeof(uint8_t), MAXKEYLEN, src);
+    }
 
     fprintf(f, "\nKey expansion for %d bit key and %d bit block:\n", MAXKEYLEN * 8, MAXBLOCKLEN * 8);
     KexpVV(key, MAXKEYLEN, MAXBLOCKLEN, rkey, f);
     fprintf(f, "\n");
 }
 
-void ShortTestBasicEnc(FILE* f)
+void ShortTestBasicEnc(FILE* f, FILE* src)
 {
     uint8_t key[MINKEYLEN], rkey[RNDS(MINKEYLEN) * MINBLOCKLEN];
     uint8_t data[MINBLOCKLEN], cipher[MINBLOCKLEN] = { 0 };
 
-    for (int i = 0; i < MINBLOCKLEN; i++)
-        data[i] = rnext();
+    if (!src)
+    {
+        for (int i = 0; i < MINBLOCKLEN; i++)
+            data[i] = rnext();
 
-    for (int i = 0; i < MINKEYLEN; i++)
-        key[i] = rnext();
+        for (int i = 0; i < MINKEYLEN; i++)
+            key[i] = rnext();
+    }
+    else
+    {
+        fread_s(data, MINBLOCKLEN, sizeof(uint8_t), MINBLOCKLEN, src);
+        fread_s(key, MINKEYLEN, sizeof(uint8_t), MINKEYLEN, src);
+    }
 
     fprintf(f, "Encryption of 128 bit block and 256 bit key\n");
     Kexp(key, MINKEYLEN, MINBLOCKLEN, rkey);
@@ -289,17 +323,25 @@ void ShortTestBasicEnc(FILE* f)
     fprintf(f, "\n");
 }
 
-void ShortTestEnc(FILE* f)
+void ShortTestEnc(FILE* f, FILE* src)
 {
     uint8_t key[MAXKEYLEN] = { 0 }, rkey[RNDS(MAXKEYLEN) * MAXBLOCKLEN];
     uint8_t data[MAXBLOCKLEN], cipher[MAXBLOCKLEN] = { 0 };
     int blen_vals[3] = { 16, 32, 64 };
 
-    for (int i = 0; i < MAXBLOCKLEN; i++)
-        data[i] = rnext();
+    if (!src)
+    {
+        for (int i = 0; i < MAXBLOCKLEN; i++)
+            data[i] = rnext();
 
-    for (int i = 0; i < MAXKEYLEN; i++)
-        key[i] = rnext();
+        for (int i = 0; i < MAXKEYLEN; i++)
+            key[i] = rnext();
+    }
+    else
+    {
+        fread_s(data, MAXBLOCKLEN, sizeof(uint8_t), MAXBLOCKLEN, src);
+        fread_s(key, MAXKEYLEN, sizeof(uint8_t), MAXKEYLEN, src);
+    }
 
     for (int klen = MINKEYLEN; klen <= MAXKEYLEN; klen += KEYLENSTEP)
     {
@@ -319,12 +361,12 @@ void ShortTestEnc(FILE* f)
     }
 }
 
-void ShortTestVectors(FILE* f)
+void ShortTestVectors(FILE* f, FILE* src)
 {
-    ShortTestLin(f);
-    ShortTestLin(f);
-    ShortTestSBox(f);
-    ShortTestKExp(f);
+    ShortTestLin(f, src);
+    ShortTestLin(f, src);
+    ShortTestSBox(f, src);
+    ShortTestKExp(f, src);
     //ShortTestBasicEnc(f);
-    ShortTestEnc(f);
+    ShortTestEnc(f, src);
 }
