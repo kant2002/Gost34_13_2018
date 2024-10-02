@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Qalqan.Data.fsti" />
     <Compile Include="PRNG.fst" />
+    <Compile Include="Qalqan.fst" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
