@@ -1,5 +1,5 @@
 ﻿module PRNG
-open FStar.Pervasives.Native        
+open FStar.Pervasives.Native
 
 type rng_state = { x: UInt32.t }
 
