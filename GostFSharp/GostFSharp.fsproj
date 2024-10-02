@@ -6,7 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Qalqan.fs" />
     <Compile Include="PRNG.fs" />
+    <Compile Include="TestVectors.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
