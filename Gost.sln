@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "GostFSharp", "GostFSharp\GostFSharp.fsproj", "{F4F5181C-9033-412C-A493-F345131CE102}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GostCsharp", "GostCsharp\GostCsharp.csproj", "{E45B186D-44F2-45FD-9C33-5F81F34B3ECB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{F4F5181C-9033-412C-A493-F345131CE102}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F4F5181C-9033-412C-A493-F345131CE102}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F4F5181C-9033-412C-A493-F345131CE102}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E45B186D-44F2-45FD-9C33-5F81F34B3ECB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E45B186D-44F2-45FD-9C33-5F81F34B3ECB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E45B186D-44F2-45FD-9C33-5F81F34B3ECB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E45B186D-44F2-45FD-9C33-5F81F34B3ECB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
