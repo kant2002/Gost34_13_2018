@@ -9,8 +9,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GostCsharp", "GostCsharp\Go
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3EDFD2C6-8164-4A27-80D6-271D9EF0F89F}"
 	ProjectSection(SolutionItems) = preProject
+		global.json = global.json
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "GostFStar", "GostFStar\GostFStar.fsproj", "{F7B5C6AC-6D79-4808-9BC0-CD7E566BF251}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +29,10 @@ Global
 		{E45B186D-44F2-45FD-9C33-5F81F34B3ECB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E45B186D-44F2-45FD-9C33-5F81F34B3ECB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E45B186D-44F2-45FD-9C33-5F81F34B3ECB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7B5C6AC-6D79-4808-9BC0-CD7E566BF251}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7B5C6AC-6D79-4808-9BC0-CD7E566BF251}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7B5C6AC-6D79-4808-9BC0-CD7E566BF251}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7B5C6AC-6D79-4808-9BC0-CD7E566BF251}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
