@@ -21,6 +21,10 @@ pub fn rnext() -> u8 {
 
 pub fn linOp(din: &[u8], dout: &mut [u8], blen: i32) -> () {
     unsafe {
-        gen::shim_linOp(din.as_ptr() as *mut cty::c_void, dout.as_mut_ptr() as *mut cty::c_void, blen);
+        gen::shim_linOp(
+            din.as_ptr() as *mut cty::c_void,
+            dout.as_mut_ptr() as *mut cty::c_void,
+            blen,
+        );
     }
 }

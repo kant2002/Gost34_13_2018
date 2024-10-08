@@ -10,19 +10,7 @@ fn main() -> ExitCode {
 }
 
 fn run() -> anyhow::Result<()> {
-    println!("Hello, world!");
-    let mut r0: [u8; 17] = [0; 17];
-    r0.iter_mut()
-        .take(15)
-        .enumerate()
-        .for_each(|x| *x.1 = x.0 as u8);
-    r0[15] = 30;
-    r0[16] = 31;
-    println!("{:?}", r0);
-
     gost::init(0);
-    r0.iter_mut().for_each(|x| *x = gost::rnext());
-    println!("{:?}", r0);
 
     let mut src = std::fs::File::open("../../../resources/input.bin")?;
     let mut f = std::fs::OpenOptions::new()
@@ -34,9 +22,7 @@ fn run() -> anyhow::Result<()> {
     let fo = Some(&mut f);
     let so = Some(&mut src);
 
-
-
     gost::test_vectors::short_test_vectors(fo, so);
-        
+
     Ok(())
 }

@@ -1,5 +1,5 @@
-use std::io::{Read, Write};
 use sprintf::sprintf;
+use std::io::{Read, Write};
 
 const BNTBLEN_CNT: usize = 3;
 
@@ -11,7 +11,7 @@ macro_rules! fprint {
                     eprintln!("Error: {} [{}:{}]", e, file!(), line!());
                 }
             }
-            None => {},
+            None => {}
         }
     };
 }
@@ -29,18 +29,28 @@ fn short_test_lin<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&m
                     return;
                 }
             }
-            None => {},
+            None => {}
         }
     }
 
     let blen_vals: [i32; BNTBLEN_CNT] = [16, 32, 64];
-    fprint!(f,b"Linear operation:\n");
+    fprint!(f, b"Linear operation:\n");
     for ex in 0..blen_vals.len() {
-        fprint!(f, sprintf!("Input (%d bits):  ", blen_vals[ex] * 8).unwrap().as_bytes());
+        fprint!(
+            f,
+            sprintf!("Input (%d bits):  ", blen_vals[ex] * 8)
+                .unwrap()
+                .as_bytes()
+        );
         for i in 0..blen_vals[ex] as usize {
             fprint!(f, sprintf!("%02X", din[i]).unwrap().as_bytes());
         }
-        fprint!(f, sprintf!("\nOutput (%d bits): ", blen_vals[ex] * 8).unwrap().as_bytes());
+        fprint!(
+            f,
+            sprintf!("\nOutput (%d bits): ", blen_vals[ex] * 8)
+                .unwrap()
+                .as_bytes()
+        );
         super::linOp(&din[..], &mut dout[..], blen_vals[ex]);
         for i in 0..blen_vals[ex] as usize {
             fprint!(f, sprintf!("%02X", dout[i]).unwrap().as_bytes());
