@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.0)
-project(gost_project)
+cmake_minimum_required(VERSION 3.16)
+project(gost_project LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ###############################################################################
 ## file globbing ##############################################################
@@ -23,7 +26,11 @@ add_executable(gost_test ${sources} ${data})
 
 # just for example add some compiler flags
 #target_compile_options(gost_test PUBLIC -std=c++1y -Wall -Wfloat-conversion)
-target_compile_options(gost_test PUBLIC -std=c++20 -Wall)
+target_compile_options(gost_test 
+  PUBLIC 
+  $<IF:$<CXX_COMPILER_ID:MSVC>,/Wall,>
+  $<IF:$<CXX_COMPILER_ID:GNU>,-Wall -Wfloat-conversion,>
+)
 
 # this lets me include files relative to the root source directory with a <> pair
 target_include_directories(gost_test PUBLIC src/main)

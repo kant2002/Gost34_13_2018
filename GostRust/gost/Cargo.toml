@@ -1,0 +1,17 @@
+[package]
+name = "gost"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+num-traits = "0.2"
+anyhow = "1.0"
+cty = "0.2"
+sprintf = "0.3"
+
+[build-dependencies]
+cc = "1.0"
+bindgen = "0.70"
+simple-error = "0.3"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
