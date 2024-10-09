@@ -31,3 +31,8 @@ extern "C" void shim_lin388(uint64_t* din, uint64_t* dout)
 {
     lin388(din, dout);
 }
+
+extern "C" void shim_Kexp(uint8_t* key, int klen, int blen, uint8_t* rkey)
+{
+    Kexp(key, klen, blen, rkey);
+}

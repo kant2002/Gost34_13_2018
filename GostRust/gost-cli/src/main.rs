@@ -10,7 +10,7 @@ fn main() -> ExitCode {
 }
 
 fn run() -> anyhow::Result<()> {
-    gost::init(0);
+    gost::cc_init(0);
 
     let mut src = std::fs::File::open("../../../resources/input.bin")?;
     let mut f = std::fs::OpenOptions::new()

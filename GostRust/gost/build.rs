@@ -79,8 +79,8 @@ fn env_var(name: &str) -> Result<String, Box<dyn std::error::Error>> {
 fn libgostcc() -> Result<(), Box<dyn std::error::Error>> {
     let target = env_var("TARGET")?;
 
-    let mut buildpp = cc::Build::new();
-    buildpp
+    let mut build_pp = cc::Build::new();
+    build_pp
         .file("./csrc/_shim.cpp")
         .file("./csrc/PRNG.cpp")
         .file("./csrc/Qalqan.cpp")
@@ -88,9 +88,9 @@ fn libgostcc() -> Result<(), Box<dyn std::error::Error>> {
         .include("./csrc");
 
     if target.contains("linux") {
-        buildpp.compile("libgostcc.a")
+        build_pp.compile("libgostcc.a")
     } else {
-        buildpp.compile("gostcc")
+        build_pp.compile("gostcc")
     }
     Ok(())
 }
