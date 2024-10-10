@@ -48,6 +48,8 @@ def MINKEYLEN := 32
 def MAXKEYLEN := 128
 def KEYLENSTEP := 16
 
+def IsBlockLen x := x % MINBLOCKLEN == 0 && x >= MINBLOCKLEN && x <= MAXBLOCKLEN
+
 def RNDS x :=
     16 + (x - 32) / 16
 def ROTL x s :=
@@ -61,38 +63,42 @@ structure Kexp_state where
 deriving Repr
 
 
-def Kexp(key: Array UInt8) (klen: Nat) (blen: Nat) (rkey: Array UInt8) := do
-    let mut r0: Array UInt8 := mkArray 17 0
-    let mut r1: Array UInt8 := mkArray 15 0
+def Kexp(key: Array UInt8) (blen: Nat) (rkey: Array UInt8) := do
+    let mut r0 := mkArray 17 0
+    let mut r1 := mkArray 15 0
+    let klen := key.size
     let addk := klen - 32
     let mut step := 0
     let mut s := SHIFT
+    let mut rkey_local := rkey
     let state : Kexp_state := { step := 0, s:= SHIFT }
-    for i in [0:15 - 1] do
-        r0 := Array.set r0 i key[2 * i]!
-        r1 := Array.set r1 i key[2 * i + 1]!
+    let start_loop := 0
+    let end_loop := 14
+    for i in [start_loop:end_loop] do
+        r0 := Array.set! r0 i key[2 * i]!
+        r1 := Array.set! r1 i key[2 * i + 1]!
 
-    Array.set r0 15 key[30]
-    Array.set r0 16 key[31]
+    r0 := Array.set! r0 15 key[30]!
+    r0 := Array.set! r0 16 key[31]!
     for r in [0: (RNDS klen - 1)] do
         for k in [0: blen + s - 1] do
-            let mut t0 := (sb[int (Array.get r0 0)] + (Array.get r0 1) + sb[int (NativePtr.get r0 3)] + (NativePtr.get r0 7) + sb[int (NativePtr.get r0 12)] + (NativePtr.get r0 16));
-            let mut t1 := (sb[int (Array.get r1 0)] + (Array.get r1 3) + sb[int (NativePtr.get r1 9)] + (NativePtr.get r1 12) + sb[int (NativePtr.get r1 14)]);
+            let mut t0 := (sb[UInt8.toNat r0[0]!]! + r0[1]! + sb[UInt8.toNat r0[3]!]! + r0[7]! + sb[UInt8.toNat r0[12]!]! + r0[15]!);
+            let mut t1 := (sb[UInt8.toNat r1[0]!]! + r1[3]! + sb[UInt8.toNat r1[9]!]! + r1[12]! + sb[UInt8.toNat r1[14]!]!);
             for i in [0: 14 - 1] do
-                Array.set r0 i (Array.get r0 (i+1))
-                Array.set r1 i (Array.get r1 (i+1))
+                r0 := Array.set! r0 i r0[i+1]!
+                r1 := Array.set! r1 i r1[i+1]!
 
-            Array.set r0 14 (Array.get r0 15)
-            Array.set r0 15 (Array.get r0 16)
+            r0 := Array.set! r0 14 r0[15]!
+            r0 := Array.set! r0 15 r0[16]!
             if (k >= s) then
-                Array.set rkey (r * blen + k - s) (t0 + Array.get r1 4)
+                rkey_local := Array.set! rkey_local (r * blen + k - s) (t0 + r1[4]!)
                 if (step < addk) then
                     if ((step &&& 1) != 0) then
-                        t0 := t0 + Array.get key (32 + step)
+                        t0 := t0 + key[32 + step]!
                     else
-                        t1 := t1 + Array.get key (32 + step)
+                        t1 := t1 + key[32 + step]!
                     step := step + 1
 
-            Array.set r0 16 t0
-            Array.set r1 14 t1
+            r0 := Array.set! r0 16 t0
+            r1 := Array.set! r1 14 t1
         s := 0
