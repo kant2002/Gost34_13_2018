@@ -62,21 +62,23 @@ structure Kexp_state where
   s : Nat
 deriving Repr
 
+def main : IO UInt32 := do
+  IO.println "hello"; IO.println "world"
+  return 0
 
-def Kexp(key: Array UInt8) (blen: Nat) (rkey: Array UInt8) := do
-    let mut r0 := mkArray 17 0
-    let mut r1 := mkArray 15 0
+-- I use IO here, since it should be something monadic,
+-- but I probably should use other monadic type
+def Kexp(key: Array UInt8) (blen: Nat) (rkey: Array UInt8) : IO (Array UInt8) := do
+    let mut r0 := mkArray (α := UInt8) 17 0
+    let mut r1 := mkArray (α := UInt8) 15 0
     let klen := key.size
     let addk := klen - 32
     let mut step := 0
     let mut s := SHIFT
     let mut rkey_local := rkey
-    let state : Kexp_state := { step := 0, s:= SHIFT }
-    let start_loop := 0
-    let end_loop := 14
-    for i in [start_loop:end_loop] do
-        r0 := Array.set! r0 i key[2 * i]!
-        r1 := Array.set! r1 i key[2 * i + 1]!
+    for i in [0:15-1] do
+        r0 := (Array.set! r0 i key[2 * i]!)
+        r1 := (Array.set! r1 i key[2 * i + 1]!)
 
     r0 := Array.set! r0 15 key[30]!
     r0 := Array.set! r0 16 key[31]!
@@ -102,3 +104,4 @@ def Kexp(key: Array UInt8) (blen: Nat) (rkey: Array UInt8) := do
             r0 := Array.set! r0 16 t0
             r1 := Array.set! r1 14 t1
         s := 0
+    return rkey_local
