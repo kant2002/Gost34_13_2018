@@ -106,6 +106,7 @@ fn bindgen() -> Result<(), Box<dyn std::error::Error>> {
         .clang_args(["-x", "c++", "-std=c++17"])
         .clang_arg("-I./c-src")
         .ctypes_prefix("cty")
+        .allowlist_function("^shim_.*$")
         .generate()
         .map_err(|e| simple_error::simple_error!("can't generate bindings. {}", e))?;
 
