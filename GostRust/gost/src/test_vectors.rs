@@ -114,6 +114,8 @@ fn KexpVV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &m
     let addk = klen - 32;
     let mut step = 0;
     let mut s = SHIFT;
+    let mut rkey_idxes: Vec<usize> = Vec::new();
+    rkey_idxes.reserve(rkey.len());
     r0.iter_mut()
         .take(15)
         .enumerate()
@@ -126,6 +128,8 @@ fn KexpVV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &m
     Pr("Register L0\0", &r0, f);
     Pr("Register L1\0", &r1, f);
     for r in 0..RNDS!(klen) {
+        let mut t0vec: Vec<u8> = Vec::with_capacity(32);
+        let mut t1vec: Vec<u8> = Vec::with_capacity(32);
         for k in 0..(blen + s) {
             let mut t0 = SB[r0[0] as usize]
                 .wrapping_add(r0[1])
@@ -133,11 +137,17 @@ fn KexpVV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &m
                 .wrapping_add(r0[7])
                 .wrapping_add(SB[r0[12] as usize])
                 .wrapping_add(r0[16]);
+
             let mut t1 = SB[r1[0] as usize]
                 .wrapping_add(r1[3])
                 .wrapping_add(SB[r1[9] as usize])
                 .wrapping_add(r1[12])
                 .wrapping_add(SB[r1[14] as usize]);
+
+            if k < t0vec.capacity() as i32 {
+                t0vec.push(t0);
+                t1vec.push(t1);
+            }
             for i in 0..14 {
                 r0[i] = r0[i + 1];
                 r1[i] = r1[i + 1];
@@ -145,7 +155,9 @@ fn KexpVV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &m
             r0[14] = r0[15];
             r0[15] = r0[16];
             if k >= s {
-                rkey[(r * blen + k - s) as usize] = t0.wrapping_add(r1[4]);
+                let rkey_idx = (r * blen + k - s) as usize;
+                rkey[rkey_idx] = t0.wrapping_add(r1[4]);
+                rkey_idxes.push(rkey_idx);
                 if step < addk {
                     if step & 1 != 0 {
                         if step < 32 {
@@ -196,6 +208,7 @@ fn KexpVV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &m
         fprintf!(f, "Round %2d key: ", r);
         Pr3(&rkey[(r * blen) as usize..(r * blen + blen) as usize], f);
     }
+    //println!("rkey Idx: {}", rkey_idxes.iter().map(|x| format!("{:03} ", x)).collect::<String>());
 }
 
 #[allow(non_snake_case)]
@@ -211,22 +224,27 @@ fn encryptV<W: Write>(
     let mut block2: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     Pr("Clear text", &data, f);
     Pr("Key 0", &rkey, f);
-    super::cc_AddRk(&data, &rkey, 0, blen, &mut block);
+    //super::cc_AddRk(&data, &rkey, 0, blen, &mut block);
+    super::qalqan::AddRk(&data, &rkey, 0, blen as usize, &mut block);
     Pr("After add K0", &block, f);
-    super::cc_sBox(&block, &mut block2, blen);
+    super::qalqan::sBox(&block, &mut block2, blen as usize);
     Pr("After Sub", &block2, f);
-    super::cc_linOp(&block2, &mut block, blen);
+    //super::cc_linOp(&block2, &mut block, blen);
+    super::qalqan::linOp(&block2, &mut block, blen as usize);
     Pr("After linear", &block, f);
     for i in 1..RNDS!(klen) - 1 {
         fprintf!(f, "Round %d.\nKey%d:\n", i, i);
         Pr3(&rkey[(i * blen) as usize..(i * blen + blen) as usize], f);
-        super::cc_AddRkX(&block, &rkey, i, blen, &mut block2);
+        //super::cc_AddRkX(&block, &rkey, i, blen, &mut block2);
+        super::qalqan::AddRkX(&block, &rkey, i as usize, blen as usize, &mut block2);
         Pr("After addkey", &block2, f);
         let b2 = block2.as_mut_ptr();
         let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(b2, blen as usize) };
-        super::cc_sBox(&mut block2, b2s, blen);
+        //super::cc_sBox(&mut block2, b2s, blen);
+        super::qalqan::sBox(&block2, b2s, blen as usize);
         Pr("After Sub", &block2, f);
-        super::cc_linOp(&block2, &mut block, blen);
+        //super::cc_linOp(&block2, &mut block, blen);
+        super::qalqan::linOp(&block2, &mut block, blen as usize);
         Pr("After linear", &block, f);
     }
     Pr(
@@ -326,6 +344,11 @@ fn short_test_kexp<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&
     );
     KexpVV(&mut key, MAXKEYLEN, MAXBLOCKLEN, &mut rkey, f);
     fprintf!(f, "\n");
+
+    super::qalqan::Kexp(&key, MAXKEYLEN as usize, MAXBLOCKLEN as usize, &mut rkey);
+
+    super::cc_Kexp(&key, MAXKEYLEN as i32, MAXBLOCKLEN as i32, &mut rkey);
+
 }
 
 //ShortTestEnc
@@ -369,7 +392,7 @@ fn short_test_enc<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&m
     for blen in blen_vals.iter() {
         data.fill(0);
         cipher.fill(0);
-        super::cc_Kexp(&key, MINKEYLEN, *blen, &mut rkey);
+        super::qalqan::Kexp(&key, MINKEYLEN as usize, (*blen) as usize, &mut rkey);
         fprintf!(
             f,
             "\n***** Encryption, key length = %d, block len = %d *****\n",

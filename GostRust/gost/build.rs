@@ -92,6 +92,11 @@ fn libgostcc() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         build_pp.compile("gostcc")
     }
+    println!("cargo:rerun-if-changed=./csrc/_shim.cpp");
+    println!("cargo:rerun-if-changed=./csrc/PRNG.cpp");
+    println!("cargo:rerun-if-changed=./csrc/Qalqan.cpp");
+    println!("cargo:rerun-if-changed=./csrc/TestVectors.cpp");
+    println!("cargo:rerun-if-changed=./csrc/_shim.hpp");
     Ok(())
 }
 

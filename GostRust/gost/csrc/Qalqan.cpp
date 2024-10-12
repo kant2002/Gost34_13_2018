@@ -1,4 +1,5 @@
 #include "Qalqan.h"
+#include <vector>
 uint8_t sb[256] = { /* ded: OK, dif: 4, dip: 7, lin: 32, pow: 7, cor: 0, dst: 112, sac: 116..140, cyc: 256 */
 0xd1, 0xb5, 0xa6, 0x74, 0x2f, 0xb2, 0x03, 0x77, 0xae, 0xb3, 0x60, 0x95, 0xfd, 0xf8, 0xc7, 0xf0,
 0x2b, 0xce, 0xa5, 0x91, 0x4c, 0x6f, 0xf3, 0x4f, 0x82, 0x01, 0x45, 0x76, 0x9f, 0xed, 0x41, 0xfb,
@@ -65,6 +66,7 @@ void Kexp(uint8_t* key, int klen, int blen, uint8_t* rkey)
             if (k >= s)
             {
                 rkey[r * blen + k - s] = t0 + r1[4];
+                //printf("RKEY IDX: %d ", r * blen + k - s);
                 if (step < addk)
                 {
                     if (step & 1)
@@ -83,9 +85,9 @@ void Kexp(uint8_t* key, int klen, int blen, uint8_t* rkey)
 
 void lin344(uint32_t* din, uint32_t* dout)
 {
-    dout[0] = din[0] ^ ROTL(din[1], c0[0]) ^ ROTL(din[2], c0[1]) ^ ROTL(din[3], c0[2]);
-    dout[1] = din[1] ^ ROTL(din[2], c0[0]) ^ ROTL(din[3], c0[1]) ^ ROTL(dout[0], c0[2]);
-    dout[2] = din[2] ^ ROTL(din[3], c0[0]) ^ ROTL(dout[0], c0[1]) ^ ROTL(dout[1], c0[2]);
+    dout[0] = din[0] ^ ROTL(din[1], c0[0])  ^ ROTL(din[2], c0[1])  ^ ROTL(din[3], c0[2]);
+    dout[1] = din[1] ^ ROTL(din[2], c0[0])  ^ ROTL(din[3], c0[1])  ^ ROTL(dout[0], c0[2]);
+    dout[2] = din[2] ^ ROTL(din[3], c0[0])  ^ ROTL(dout[0], c0[1]) ^ ROTL(dout[1], c0[2]);
     dout[3] = din[3] ^ ROTL(dout[0], c0[0]) ^ ROTL(dout[1], c0[1]) ^ ROTL(dout[2], c0[2]);
 }
 
