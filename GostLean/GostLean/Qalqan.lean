@@ -62,13 +62,9 @@ structure Kexp_state where
   s : Nat
 deriving Repr
 
-def main : IO UInt32 := do
-  IO.println "hello"; IO.println "world"
-  return 0
-
 -- I use IO here, since it should be something monadic,
 -- but I probably should use other monadic type
-def Kexp(key: Array UInt8) (blen: Nat) (rkey: Array UInt8) : IO (Array UInt8) := do
+def Kexp(key: Array UInt8) (blen: Nat) (rkey: Array UInt8) : Id (Array UInt8) := do
     let mut r0 := mkArray (α := UInt8) 17 0
     let mut r1 := mkArray (α := UInt8) 15 0
     let klen := key.size
