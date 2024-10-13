@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+#![allow(dead_code)]
 
 pub const SHIFT: i32 = 17;
 pub const MINBLOCKLEN: i32 = 16;
@@ -48,7 +49,7 @@ pub const ISB: [u8; 256] = [
 
 const C0: [u32; 3] = [1, 17, 14];
 const C1: [u32; 7] = [3, 5, 11, 21, 16, 30, 19];
-const C2: [u64; 7] = [4, 0, 22, 27, 47, 4, 61];
+const C2: [u32; 7] = [4, 0, 22, 27, 47, 4, 61];
 
 macro_rules! RNDS {
     ($x:expr) => {
@@ -56,6 +57,7 @@ macro_rules! RNDS {
     };
 }
 
+use num_traits::Inv;
 pub(crate) use RNDS;
 
 #[allow(non_snake_case)]
@@ -66,8 +68,8 @@ pub fn ROTL(x: u32, s: u32) -> u32 {
 
 #[allow(non_snake_case)]
 #[inline]
-pub fn ROTL64(x: u64, s: u64) -> u64 {
-    (x << s) | (x >> (64 - s))
+pub fn ROTL64(x: u64, s: u32) -> u64 {
+    x.wrapping_shl(s) | x.wrapping_shr(64 - s)
 }
 
 fn lin334(din: &[u32], dout: &mut [u32]) {
@@ -245,43 +247,6 @@ fn lin388(din: &[u64], dout: &mut [u64]) {
     }
 }
 
-fn convert_u8_to_u64_slice_unaligned(data: &[u8]) -> &[u64] {
-    assert!(data.len() % 8 == 0, "The length of the input slice must be a multiple of 8.");
-    let ptr = data.as_ptr();
-    let len = data.len() / 8;
-    unsafe { std::slice::from_raw_parts(ptr as *const u64, len) }
-}
-
-fn convert_u8_to_u64_slice_unaligned_mut(data: &mut [u8]) -> &mut [u64] {
-    assert!(data.len() % 8 == 0, "The length of the input slice must be a multiple of 8.");
-    let ptr = data.as_mut_ptr();
-    let len = data.len() / 8;
-    unsafe { std::slice::from_raw_parts_mut(ptr as *mut u64, len) }
-}
-
-fn convert_u8_to_u64_vec(data: &[u8]) -> Vec<u64> {
-    assert!(data.len() % 8 == 0, "The length of the input slice must be a multiple of 8.");
-    let mut result = Vec::with_capacity(data.len() / 8);
-    for chunk in data.chunks_exact(8) {
-        let mut array = [0u8; 8];
-        array.copy_from_slice(chunk);
-        result.push(u64::from_le_bytes(array));
-    }
-    result
-}
-
-#[allow(dead_code)]
-fn convert_mut_u8_to_u64_vec(data: &mut [u8]) -> Vec<u64> {
-    assert!(data.len() % 8 == 0, "The length of the input slice must be a multiple of 8.");
-    let mut result = Vec::with_capacity(data.len() / 8);
-    for chunk in data.chunks_exact(8) {
-        let mut array = [0u8; 8];
-        array.copy_from_slice(chunk);
-        result.push(u64::from_le_bytes(array));
-    }
-    result
-}
-
 pub fn linOp(d: &[u8], r: &mut [u8], blocklen: usize) {
     match blocklen {
         16 => {
@@ -289,8 +254,6 @@ pub fn linOp(d: &[u8], r: &mut [u8], blocklen: usize) {
             let din = unsafe { std::slice::from_raw_parts(dp, d.len() / 4) };
             let rp = r.as_mut_ptr() as *mut u32;
             let dout = unsafe { std::slice::from_raw_parts_mut(rp, r.len() / 4) };
-            println!("16. d.len() = {}, r.len() = {}", d.len(), r.len());
-            println!("16. din.len() = {}, dout.len() = {}", din.len(), dout.len());
             lin334(din, dout);
         }
         32 => {
@@ -298,31 +261,14 @@ pub fn linOp(d: &[u8], r: &mut [u8], blocklen: usize) {
             let din = unsafe { std::slice::from_raw_parts(dp, d.len() / 4) };
             let rp = r.as_mut_ptr() as *mut u32;
             let dout = unsafe { std::slice::from_raw_parts_mut(rp, r.len() / 4) };
-            println!("32. d.len() = {}, r.len() = {}", d.len(), r.len());
-            println!("32. din.len() = {}, dout.len() = {}", din.len(), dout.len());
             lin384(din, dout);
         }
         64 => {
-            println!("64. d.len() = {}, r.len() = {}", d.len(), r.len());
-            //println!("64. din.len() = {}, dout.len() = {}", din.len(), dout.len());
-            if cfg!(debug_assertions) {
-                let vd: Vec<u64> = convert_u8_to_u64_vec(d);
-                let mut vr: Vec<u64> = convert_u8_to_u64_vec(r);
-                let din = vd.as_slice();
-                let dout = vr.as_mut_slice();
-                println!("64. din.len() = {}, dout.len() = {}", din.len(), dout.len());
-                lin388(din, dout);
-                print!("D din  : ");din.iter().for_each(|x| print!("{:016x} ", x));println!();
-                print!("D dout : ");dout.iter().for_each(|x| print!("{:016x} ", x));println!();
-            } else {
-                let dp = d.as_ptr() as *const u64;
-                let din = unsafe { std::slice::from_raw_parts(dp, d.len() / 8) };
-                let rp = r.as_mut_ptr() as *mut u64;
-                let dout = unsafe { std::slice::from_raw_parts_mut(rp, r.len() / 8) };
-                lin388(din, dout);
-                print!("R din  : ");din.iter().for_each(|x| print!("{:016x} ", x));println!();
-                print!("R dout : ");dout.iter().for_each(|x| print!("{:016x} ", x));println!();
-            }
+            let dp = d.as_ptr() as *const u64;
+            let din = unsafe { std::slice::from_raw_parts(dp, d.len() / 8) };
+            let rp = r.as_mut_ptr() as *mut u64;
+            let dout = unsafe { std::slice::from_raw_parts_mut(rp, r.len() / 8) };
+            lin388(din, dout);
         }
         _ => panic!("Unsupported block length {}", blocklen),
     }
@@ -431,4 +377,269 @@ pub fn AddRk(block: &[u8], rkey: &[u8], nr: usize, blen: usize, res: &mut [u8]) 
             tmp >>= 8;
         }
     }
+}
+
+fn encrypt(data: &[u8], rkey: &[u8], klen: usize, blen: usize, res: &mut [u8]) {
+    let mut block: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
+    let mut block2: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
+    AddRk(&data, &rkey, 0, blen as usize, &mut block);
+    sBox(&block, &mut block2, blen as usize);
+    linOp(&block2, &mut block, blen as usize);
+    for i in 1..RNDS!(klen) - 1 {
+        AddRkX(&block, &rkey, i as usize, blen as usize, &mut block2);
+        let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
+        sBox(&block2, b2s, blen as usize);
+        linOp(&block2, &mut block, blen as usize);
+    }
+    AddRk(&block, &rkey, RNDS!(klen) - 1, blen, res);
+}
+
+pub fn InvAddRk(block: &[u8], rkey: &[u8], nr: usize, blen: usize, res: &mut [u8]) {
+    let block = block.as_ptr();
+    let rkey = rkey.as_ptr();
+    let res = res.as_mut_ptr();
+    unsafe {
+        let mut tmp: u16 = *block.add(0) as u16 - *rkey.add(nr * blen) as u16;
+        *res.add(0) = tmp as u8;
+        tmp >>= 8;
+        for i in 1..blen {
+            tmp += *block.add(i) as u16 - *rkey.add(blen * nr + i) as u16;
+            *res.add(i) = tmp as u8;
+            tmp >>= 8;
+        }
+    }
+}
+
+fn ilin334(din: &[u32], dout: &mut [u32]) {
+    let dout = dout.as_mut_ptr();
+    let din = din.as_ptr();
+    let c0 = C0.as_ptr();
+    unsafe {
+        *dout.add(3) = *din.add(3)
+            ^ ROTL(*din.add(0), *c0.add(0))
+            ^ ROTL(*din.add(1), *c0.add(1))
+            ^ ROTL(*din.add(2), *c0.add(2));
+        *dout.add(2) = *din.add(2)
+            ^ ROTL(*dout.add(3), *c0.add(2))
+            ^ ROTL(*din.add(0), *c0.add(0))
+            ^ ROTL(*din.add(1), *c0.add(1));
+        *dout.add(1) = *din.add(1)
+            ^ ROTL(*dout.add(2), *c0.add(1))
+            ^ ROTL(*dout.add(3), *c0.add(2))
+            ^ ROTL(*din.add(0), *c0.add(0));
+        *dout.add(0) = *din.add(0)
+            ^ ROTL(*dout.add(1), *c0.add(0))
+            ^ ROTL(*dout.add(2), *c0.add(1))
+            ^ ROTL(*dout.add(3), *c0.add(2));
+    }
+}
+
+fn ilin384(din: &[u32], dout: &mut [u32]) {
+    let dout = dout.as_mut_ptr();
+    let din = din.as_ptr();
+    let c1 = C1.as_ptr();
+    unsafe {
+        *dout.add(7) = *din.add(7)
+            ^ ROTL(*din.add(0), *c1.add(0))
+            ^ ROTL(*din.add(1), *c1.add(1))
+            ^ ROTL(*din.add(2), *c1.add(2))
+            ^ ROTL(*din.add(3), *c1.add(3))
+            ^ ROTL(*din.add(4), *c1.add(4))
+            ^ ROTL(*din.add(5), *c1.add(5))
+            ^ ROTL(*din.add(6), *c1.add(6));
+
+        *dout.add(6) = *din.add(6)
+            ^ ROTL(*dout.add(7), *c1.add(6))
+            ^ ROTL(*din.add(0), *c1.add(0))
+            ^ ROTL(*din.add(1), *c1.add(1))
+            ^ ROTL(*din.add(2), *c1.add(2))
+            ^ ROTL(*din.add(3), *c1.add(3))
+            ^ ROTL(*din.add(4), *c1.add(4))
+            ^ ROTL(*din.add(5), *c1.add(5));
+
+        *dout.add(5) = *din.add(5)
+            ^ ROTL(*dout.add(6), *c1.add(5))
+            ^ ROTL(*dout.add(7), *c1.add(6))
+            ^ ROTL(*din.add(0), *c1.add(0))
+            ^ ROTL(*din.add(1), *c1.add(1))
+            ^ ROTL(*din.add(2), *c1.add(2))
+            ^ ROTL(*din.add(3), *c1.add(3))
+            ^ ROTL(*din.add(4), *c1.add(4));
+
+        *dout.add(4) = *din.add(4)
+            ^ ROTL(*dout.add(5), *c1.add(4))
+            ^ ROTL(*dout.add(6), *c1.add(5))
+            ^ ROTL(*dout.add(7), *c1.add(6))
+            ^ ROTL(*din.add(0), *c1.add(0))
+            ^ ROTL(*din.add(1), *c1.add(1))
+            ^ ROTL(*din.add(2), *c1.add(2))
+            ^ ROTL(*din.add(3), *c1.add(3));
+
+        *dout.add(3) = *din.add(3)
+            ^ ROTL(*dout.add(4), *c1.add(3))
+            ^ ROTL(*dout.add(5), *c1.add(4))
+            ^ ROTL(*dout.add(6), *c1.add(5))
+            ^ ROTL(*dout.add(7), *c1.add(6))
+            ^ ROTL(*din.add(0), *c1.add(0))
+            ^ ROTL(*din.add(1), *c1.add(1))
+            ^ ROTL(*din.add(2), *c1.add(2));
+
+        *dout.add(2) = *din.add(2)
+            ^ ROTL(*dout.add(3), *c1.add(2))
+            ^ ROTL(*dout.add(4), *c1.add(3))
+            ^ ROTL(*dout.add(5), *c1.add(4))
+            ^ ROTL(*dout.add(6), *c1.add(5))
+            ^ ROTL(*dout.add(7), *c1.add(6))
+            ^ ROTL(*din.add(0), *c1.add(0))
+            ^ ROTL(*din.add(1), *c1.add(1));
+
+        *dout.add(1) = *din.add(1)
+            ^ ROTL(*dout.add(2), *c1.add(1))
+            ^ ROTL(*dout.add(3), *c1.add(2))
+            ^ ROTL(*dout.add(4), *c1.add(3))
+            ^ ROTL(*dout.add(5), *c1.add(4))
+            ^ ROTL(*dout.add(6), *c1.add(5))
+            ^ ROTL(*dout.add(7), *c1.add(6))
+            ^ ROTL(*din.add(0), *c1.add(0));
+
+        *dout.add(0) = *din.add(0)
+            ^ ROTL(*dout.add(1), *c1.add(0))
+            ^ ROTL(*dout.add(2), *c1.add(1))
+            ^ ROTL(*dout.add(3), *c1.add(2))
+            ^ ROTL(*dout.add(4), *c1.add(3))
+            ^ ROTL(*dout.add(5), *c1.add(4))
+            ^ ROTL(*dout.add(6), *c1.add(5))
+            ^ ROTL(*dout.add(7), *c1.add(6));
+    }
+}
+
+fn ilin388(din: &[u64], dout: &mut [u64]) {
+    let dout = dout.as_mut_ptr();
+    let din = din.as_ptr();
+    let c2 = C2.as_ptr();
+    unsafe {
+        *dout.add(7) = *din.add(7)
+            ^ ROTL64(*din.add(0), *c2.add(0))
+            ^ *din.add(1)
+            ^ ROTL64(*din.add(2), *c2.add(2))
+            ^ ROTL64(*din.add(3), *c2.add(3))
+            ^ ROTL64(*din.add(4), *c2.add(4))
+            ^ ROTL64(*din.add(5), *c2.add(5))
+            ^ ROTL64(*din.add(6), *c2.add(6));
+
+        *dout.add(6) = *din.add(6)
+            ^ ROTL64(*dout.add(7), *c2.add(0))
+            ^ ROTL64(*din.add(0), *c2.add(1))
+            ^ ROTL64(*din.add(1), *c2.add(2))
+            ^ ROTL64(*din.add(2), *c2.add(3))
+            ^ ROTL64(*din.add(3), *c2.add(4))
+            ^ ROTL64(*din.add(4), *c2.add(5))
+            ^ ROTL64(*din.add(5), *c2.add(6));
+
+        *dout.add(5) = *din.add(5)
+            ^ ROTL64(*dout.add(6), *c2.add(0))
+            ^ ROTL64(*dout.add(7), *c2.add(1))
+            ^ ROTL64(*din.add(0), *c2.add(2))
+            ^ ROTL64(*din.add(1), *c2.add(3))
+            ^ ROTL64(*din.add(2), *c2.add(4))
+            ^ ROTL64(*din.add(3), *c2.add(5))
+            ^ ROTL64(*din.add(4), *c2.add(6));
+
+        *dout.add(4) = *din.add(4)
+            ^ ROTL64(*dout.add(5), *c2.add(0))
+            ^ ROTL64(*dout.add(6), *c2.add(1))
+            ^ ROTL64(*dout.add(7), *c2.add(2))
+            ^ ROTL64(*din.add(0), *c2.add(3))
+            ^ ROTL64(*din.add(1), *c2.add(4))
+            ^ ROTL64(*din.add(2), *c2.add(5))
+            ^ ROTL64(*din.add(3), *c2.add(6));
+
+        *dout.add(3) = *din.add(3)
+            ^ ROTL64(*dout.add(4), *c2.add(0))
+            ^ ROTL64(*dout.add(5), *c2.add(1))
+            ^ ROTL64(*dout.add(6), *c2.add(2))
+            ^ ROTL64(*dout.add(7), *c2.add(3))
+            ^ ROTL64(*din.add(0), *c2.add(4))
+            ^ ROTL64(*din.add(1), *c2.add(5))
+            ^ ROTL64(*din.add(2), *c2.add(6));
+
+        *dout.add(2) = *din.add(2)
+            ^ ROTL64(*dout.add(3), *c2.add(0))
+            ^ ROTL64(*dout.add(4), *c2.add(1))
+            ^ ROTL64(*dout.add(5), *c2.add(2))
+            ^ ROTL64(*dout.add(6), *c2.add(3))
+            ^ ROTL64(*dout.add(7), *c2.add(4))
+            ^ ROTL64(*din.add(0), *c2.add(5))
+            ^ ROTL64(*din.add(1), *c2.add(6));
+
+        *dout.add(1) = *din.add(1)
+            ^ ROTL64(*dout.add(2), *c2.add(0))
+            ^ ROTL64(*dout.add(3), *c2.add(1))
+            ^ ROTL64(*dout.add(4), *c2.add(2))
+            ^ ROTL64(*dout.add(5), *c2.add(3))
+            ^ ROTL64(*dout.add(6), *c2.add(4))
+            ^ ROTL64(*dout.add(7), *c2.add(5))
+            ^ ROTL64(*din.add(0), *c2.add(6));
+
+        *dout.add(0) = *din.add(0)
+            ^ ROTL64(*dout.add(1), *c2.add(0))
+            ^ ROTL64(*dout.add(2), *c2.add(1))
+            ^ ROTL64(*dout.add(3), *c2.add(2))
+            ^ ROTL64(*dout.add(4), *c2.add(3))
+            ^ ROTL64(*dout.add(5), *c2.add(4))
+            ^ ROTL64(*dout.add(6), *c2.add(5))
+            ^ ROTL64(*dout.add(7), *c2.add(6));
+    }
+}
+
+pub fn InvlinOp(d: &[u8], r: &mut [u8], blocklen: usize) {
+    match blocklen {
+        16 => {
+            let dp = d.as_ptr() as *const u32;
+            let din = unsafe { std::slice::from_raw_parts(dp, d.len() / 4) };
+            let rp = r.as_mut_ptr() as *mut u32;
+            let dout = unsafe { std::slice::from_raw_parts_mut(rp, r.len() / 4) };
+            ilin334(din, dout);
+        }
+        32 => {
+            let dp = d.as_ptr() as *const u32;
+            let din = unsafe { std::slice::from_raw_parts(dp, d.len() / 4) };
+            let rp = r.as_mut_ptr() as *mut u32;
+            let dout = unsafe { std::slice::from_raw_parts_mut(rp, r.len() / 4) };
+            ilin384(din, dout);
+        }
+        64 => {
+            let dp = d.as_ptr() as *const u64;
+            let din = unsafe { std::slice::from_raw_parts(dp, d.len() / 8) };
+            let rp = r.as_mut_ptr() as *mut u64;
+            let dout = unsafe { std::slice::from_raw_parts_mut(rp, r.len() / 8) };
+            ilin388(din, dout);
+        }
+        _ => panic!("Unsupported block length {}", blocklen),
+    }
+}
+
+pub fn InvsBox(data: &[u8], res: &mut [u8], blen: usize) {
+    data.iter()
+        .take(blen)
+        .zip(res.iter_mut().take(blen))
+        .for_each(|(d, r)| {
+            *r = ISB[*d as usize];
+        });
+}
+
+fn decrypt(data: &[u8], rkey: &[u8], klen: usize, blen: usize, res: &mut [u8]) {
+    let mut block: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
+    let mut block2: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
+    InvAddRk(&data, &rkey, RNDS!(klen) - 1, blen as usize, &mut block);
+    for i in (1..RNDS!(klen) - 1).rev() {
+        InvlinOp(&block, &mut block2, blen as usize);
+        let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
+        InvsBox(&block2, b2s, blen as usize);
+        AddRk(&block2, &rkey, i as usize, blen as usize, &mut block);
+    }
+    InvlinOp(&block, &mut block2, blen as usize);
+    let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
+    InvsBox(&block2, b2s, blen as usize);
+    InvAddRk(&block2, rkey, 0, blen, res);
 }

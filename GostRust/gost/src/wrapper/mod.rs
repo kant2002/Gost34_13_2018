@@ -23,6 +23,12 @@ pub fn cc_linOp(din: &[u8], dout: &mut [u8], blen: i32) -> () {
     }
 }
 
+pub fn cc_lin388(din: &[u64], dout: &mut [u64]) -> () {
+    unsafe {
+        gen::shim_lin388(din.as_ptr() as *mut u64, dout.as_mut_ptr());
+    }
+}
+
 pub fn cc_sBox(din: &[u8], dout: &mut [u8], blen: i32) -> () {
     unsafe {
         gen::shim_sBox(din.as_ptr() as *mut u8, dout.as_mut_ptr(), blen);

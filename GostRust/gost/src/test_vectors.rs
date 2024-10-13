@@ -252,7 +252,7 @@ fn encryptV<W: Write>(
         &rkey[((RNDS!(klen) - 1) * blen) as usize..(((RNDS!(klen) - 1) * blen) + blen) as usize],
         f,
     );
-    super::cc_AddRk(&block, &rkey, RNDS!(klen) - 1, blen, res);
+    super::qalqan::AddRk(&block, &rkey, RNDS!(klen as usize) - 1, blen as usize, res);
     Pr("Ciphertext", &res, f);
 }
 
@@ -260,7 +260,7 @@ fn short_test_lin<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&m
     let mut din: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let mut dout: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     if src.is_none() {
-        din.iter_mut().for_each(|x| *x = super::cc_rnext());
+        din.iter_mut().for_each(|x| *x = super::prng::rnext());
     } else {
         match src {
             Some(ref mut _fr) => {
@@ -273,7 +273,7 @@ fn short_test_lin<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&m
         }
     }
 
-    let blen_vals: [i32; BNTBLEN_CNT] = [16, 32, 64];
+    let blen_vals: [usize; BNTBLEN_CNT] = [16, 32, 64];
     fprintf!(f, "Linear operation:\n");
     for ex in 0..blen_vals.len() {
         fprintf!(f, "Input (%d bits):  ", blen_vals[ex] * 8);
@@ -281,7 +281,7 @@ fn short_test_lin<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&m
             fprintf!(f, "%02x", din[i]);
         }
         fprintf!(f, "\nOutput (%d bits): ", blen_vals[ex] * 8);
-        super::cc_linOp(&din[..], &mut dout[..], blen_vals[ex]);
+        super::qalqan::linOp(&din[..], &mut dout[..], blen_vals[ex]);
         for i in 0..blen_vals[ex] as usize {
             fprintf!(f, "%02x", dout[i]);
         }
@@ -295,7 +295,7 @@ fn short_test_sbox<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&
     let mut din: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let mut dout: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     if src.is_none() {
-        din.iter_mut().for_each(|x| *x = super::cc_rnext());
+        din.iter_mut().for_each(|x| *x = super::prng::rnext());
     } else {
         match src {
             Some(ref mut _fr) => {
@@ -324,7 +324,7 @@ fn short_test_kexp<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&
     let mut rkey: [u8; (RNDS!(MAXKEYLEN) * MAXBLOCKLEN) as usize] =
         [0; (RNDS!(MAXKEYLEN) * MAXBLOCKLEN) as usize];
     if src.is_none() {
-        key.iter_mut().for_each(|x| *x = super::cc_rnext());
+        key.iter_mut().for_each(|x| *x = super::prng::rnext());
     } else {
         match src {
             Some(ref mut _fr) => {
@@ -344,11 +344,6 @@ fn short_test_kexp<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&
     );
     KexpVV(&mut key, MAXKEYLEN, MAXBLOCKLEN, &mut rkey, f);
     fprintf!(f, "\n");
-
-    super::qalqan::Kexp(&key, MAXKEYLEN as usize, MAXBLOCKLEN as usize, &mut rkey);
-
-    super::cc_Kexp(&key, MAXKEYLEN as i32, MAXBLOCKLEN as i32, &mut rkey);
-
 }
 
 //ShortTestEnc
@@ -360,8 +355,8 @@ fn short_test_enc<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&m
     let mut cipher: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let blen_vals: [i32; BNTBLEN_CNT] = [16, 32, 64];
     if src.is_none() {
-        data.iter_mut().for_each(|x| *x = super::cc_rnext());
-        key.iter_mut().for_each(|x| *x = super::cc_rnext());
+        data.iter_mut().for_each(|x| *x = super::prng::rnext());
+        key.iter_mut().for_each(|x| *x = super::prng::rnext());
     } else {
         match src {
             Some(ref mut _fr) => {
