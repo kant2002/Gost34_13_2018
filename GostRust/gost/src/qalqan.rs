@@ -57,7 +57,6 @@ macro_rules! RNDS {
     };
 }
 
-use num_traits::Inv;
 pub(crate) use RNDS;
 
 #[allow(non_snake_case)]
@@ -387,7 +386,8 @@ fn encrypt(data: &[u8], rkey: &[u8], klen: usize, blen: usize, res: &mut [u8]) {
     linOp(&block2, &mut block, blen as usize);
     for i in 1..RNDS!(klen) - 1 {
         AddRkX(&block, &rkey, i as usize, blen as usize, &mut block2);
-        let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
+        let b2s: &mut [u8] =
+            unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
         sBox(&block2, b2s, blen as usize);
         linOp(&block2, &mut block, blen as usize);
     }
@@ -634,12 +634,14 @@ fn decrypt(data: &[u8], rkey: &[u8], klen: usize, blen: usize, res: &mut [u8]) {
     InvAddRk(&data, &rkey, RNDS!(klen) - 1, blen as usize, &mut block);
     for i in (1..RNDS!(klen) - 1).rev() {
         InvlinOp(&block, &mut block2, blen as usize);
-        let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
+        let b2s: &mut [u8] =
+            unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
         InvsBox(&block2, b2s, blen as usize);
         AddRk(&block2, &rkey, i as usize, blen as usize, &mut block);
     }
     InvlinOp(&block, &mut block2, blen as usize);
-    let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
+    let b2s: &mut [u8] =
+        unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
     InvsBox(&block2, b2s, blen as usize);
     InvAddRk(&block2, rkey, 0, blen, res);
 }

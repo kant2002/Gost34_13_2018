@@ -1,5 +1,4 @@
-
-static mut X : u32 = 1;
+static mut X: u32 = 1;
 
 pub fn init(ix: u32) {
     unsafe {
