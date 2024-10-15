@@ -88,7 +88,7 @@ def ShortTestKExp (f: IO.FS.Stream) (src: Option IO.FS.Stream) : (IO Unit) := do
 
     f.putStr s!"\nKey expansion for {(MAXKEYLEN * 8)} bit key and {MAXBLOCKLEN * 8} bit block:\n"
     let key := (← key).data
-    discard <| KexpVV key MAXBLOCKLEN rkey f
+    let dummy ← KexpVV key MAXBLOCKLEN rkey f
     f.putStr "\n"
 
 def ShortTestVectors (f: IO.FS.Stream) (src: Option IO.FS.Stream) : (IO Unit) := do
