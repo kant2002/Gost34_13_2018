@@ -112,6 +112,8 @@ def set (s : Subarray α) (i : Fin s.size) (v: α): Subarray α :=
    rw [Nat.add_comm]
    exact Nat.add_lt_of_lt_sub this
   let changed_value := s.array.set ⟨s.start + i.val,this⟩ v
+  --have : s.stop ≤ changed_value.size := by
+  --  sorry
   if h : s.stop ≤ changed_value.size then {
         array := changed_value,
         stop := s.stop,
@@ -128,9 +130,143 @@ abbrev set! [Inhabited α] (s : Subarray α) (i : Nat) (v₀ : α) : Subarray α
 
 end Subarray
 
-def lin344 (din: Subarray UInt8) (dout: Subarray UInt8) : Subarray UInt8 :=
-    let dout := dout.set! 0 (UInt8.ofNat ((UInt8.toNat din[0]! ^^^ (ROTL (UInt8.toNat din[1]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[2]!) c0[1]) ^^^ (ROTL (UInt8.toNat din[3]!) c0[2]))))
-    let dout := dout.set! 1 (UInt8.ofNat ((UInt8.toNat din[1]! ^^^ (ROTL (UInt8.toNat din[2]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[3]!) c0[1]) ^^^ (ROTL (UInt8.toNat din[0]!) c0[2]))))
-    let dout := dout.set! 1 (UInt8.ofNat ((UInt8.toNat din[2]! ^^^ (ROTL (UInt8.toNat din[3]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[3]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[1]!) c0[2]))))
-    let dout := dout.set! 1 (UInt8.ofNat ((UInt8.toNat din[3]! ^^^ (ROTL (UInt8.toNat din[0]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[3]!) c0[1]) ^^^ (ROTL (UInt8.toNat din[2]!) c0[2]))))
+def lin344 (din: Subarray UInt32) (dout: Subarray UInt32) : Subarray UInt32 :=
+    let dout := dout.set! 0 (UInt32.ofNat ((UInt32.toNat din[0]! ^^^ (ROTL (UInt32.toNat din[1]!) c0[0]) ^^^ (ROTL (UInt32.toNat din[2]!) c0[1]) ^^^ (ROTL (UInt32.toNat din[3]!) c0[2]))))
+    let dout := dout.set! 1 (UInt32.ofNat ((UInt32.toNat din[1]! ^^^ (ROTL (UInt32.toNat din[2]!) c0[0]) ^^^ (ROTL (UInt32.toNat din[3]!) c0[1]) ^^^ (ROTL (UInt32.toNat dout[0]!) c0[2]))))
+    let dout := dout.set! 2 (UInt32.ofNat ((UInt32.toNat din[2]! ^^^ (ROTL (UInt32.toNat din[3]!) c0[0]) ^^^ (ROTL (UInt32.toNat dout[0]!) c0[0]) ^^^ (ROTL (UInt32.toNat dout[1]!) c0[2]))))
+    let dout := dout.set! 3 (UInt32.ofNat ((UInt32.toNat din[3]! ^^^ (ROTL (UInt32.toNat dout[0]!) c0[0]) ^^^ (ROTL (UInt32.toNat dout[1]!) c0[1]) ^^^ (ROTL (UInt32.toNat dout[2]!) c0[2]))))
     dout
+
+def lin348 (din: Subarray UInt32) (dout: Subarray UInt32) : Subarray UInt32 :=
+    let dout := dout.set! 0 (UInt32.ofNat ((UInt32.toNat din[0]!
+        ^^^ (ROTL (UInt32.toNat din[1]!) c1[0])
+        ^^^ (ROTL (UInt32.toNat din[2]!) c1[1])
+        ^^^ (ROTL (UInt32.toNat din[3]!) c1[2])
+        ^^^ (ROTL (UInt32.toNat din[4]!) c1[3])
+        ^^^ (ROTL (UInt32.toNat din[5]!) c1[4])
+        ^^^ (ROTL (UInt32.toNat din[6]!) c1[5])
+        ^^^ (ROTL (UInt32.toNat din[7]!) c1[6]))))
+    let dout := dout.set! 1 (UInt32.ofNat ((UInt32.toNat din[1]!
+        ^^^ (ROTL (UInt32.toNat din[2]!) c1[0])
+        ^^^ (ROTL (UInt32.toNat din[3]!) c1[1])
+        ^^^ (ROTL (UInt32.toNat din[4]!) c1[2])
+        ^^^ (ROTL (UInt32.toNat din[5]!) c1[3])
+        ^^^ (ROTL (UInt32.toNat din[6]!) c1[4])
+        ^^^ (ROTL (UInt32.toNat din[7]!) c1[5])
+        ^^^ (ROTL (UInt32.toNat dout[0]!) c1[6]))))
+    -- let dout := dout.set! 2 (UInt32.ofNat ((UInt32.toNat din[2]!
+    --     ^^^ (ROTL (UInt32.toNat din[3]!) c1[0])
+    --     ^^^ (ROTL (UInt32.toNat din[4]!) c1[1])
+    --     ^^^ (ROTL (UInt32.toNat din[5]!) c1[2])
+    --     ^^^ (ROTL (UInt32.toNat din[6]!) c1[3])
+    --     ^^^ (ROTL (UInt32.toNat din[7]!) c1[4])
+    --     ^^^ (ROTL (UInt32.toNat dout[0]!) c1[5])
+    --     ^^^ (ROTL (UInt32.toNat dout[1]!) c1[6]))))
+    -- let dout := dout.set! 3 (UInt32.ofNat ((UInt32.toNat din[3]!
+    --     ^^^ (ROTL (UInt32.toNat din[4]!) c1[0])
+    --     ^^^ (ROTL (UInt32.toNat din[5]!) c1[1])
+    --     ^^^ (ROTL (UInt32.toNat din[6]!) c1[2])
+    --     ^^^ (ROTL (UInt32.toNat din[7]!) c1[3])
+    --     ^^^ (ROTL (UInt32.toNat dout[0]!) c1[4])
+    --     ^^^ (ROTL (UInt32.toNat dout[1]!) c1[5])
+    --     ^^^ (ROTL (UInt32.toNat dout[2]!) c1[6]))))
+    -- let dout := dout.set! 4 (UInt32.ofNat ((UInt32.toNat din[4]!
+    --     ^^^ (ROTL (UInt32.toNat din[5]!) c1[0])
+    --     ^^^ (ROTL (UInt32.toNat din[6]!) c1[1])
+    --     ^^^ (ROTL (UInt32.toNat din[7]!) c1[2])
+    --     ^^^ (ROTL (UInt32.toNat dout[0]!) c1[3])
+    --     ^^^ (ROTL (UInt32.toNat dout[1]!) c1[4])
+    --     ^^^ (ROTL (UInt32.toNat dout[2]!) c1[5])
+    --     ^^^ (ROTL (UInt32.toNat dout[3]!) c1[6]))))
+    -- let dout := dout.set! 5 (UInt32.ofNat ((UInt32.toNat din[5]!
+    --     ^^^ (ROTL (UInt32.toNat din[6]!) c1[0])
+    --     ^^^ (ROTL (UInt32.toNat din[7]!) c1[1])
+    --     ^^^ (ROTL (UInt32.toNat dout[0]!) c1[2])
+    --     ^^^ (ROTL (UInt32.toNat dout[1]!) c1[3])
+    --     ^^^ (ROTL (UInt32.toNat dout[2]!) c1[4])
+    --     ^^^ (ROTL (UInt32.toNat dout[3]!) c1[5])
+    --     ^^^ (ROTL (UInt32.toNat dout[4]!) c1[6]))))
+    -- let dout := dout.set! 6 (UInt32.ofNat ((UInt32.toNat din[6]!
+    --     ^^^ (ROTL (UInt32.toNat din[7]!) c1[0])
+    --     ^^^ (ROTL (UInt32.toNat dout[0]!) c1[1])
+    --     ^^^ (ROTL (UInt32.toNat dout[1]!) c1[2])
+    --     ^^^ (ROTL (UInt32.toNat dout[2]!) c1[3])
+    --     ^^^ (ROTL (UInt32.toNat dout[3]!) c1[4])
+    --     ^^^ (ROTL (UInt32.toNat dout[4]!) c1[5])
+    --     ^^^ (ROTL (UInt32.toNat dout[5]!) c1[6]))))
+    -- let dout := dout.set! 7 (UInt32.ofNat ((UInt32.toNat din[7]!
+    --     ^^^ (ROTL (UInt32.toNat dout[0]!) c1[0])
+    --     ^^^ (ROTL (UInt32.toNat dout[1]!) c1[1])
+    --     ^^^ (ROTL (UInt32.toNat dout[2]!) c1[2])
+    --     ^^^ (ROTL (UInt32.toNat dout[3]!) c1[3])
+    --     ^^^ (ROTL (UInt32.toNat dout[4]!) c1[4])
+    --     ^^^ (ROTL (UInt32.toNat dout[5]!) c1[5])
+    --     ^^^ (ROTL (UInt32.toNat dout[6]!) c1[6]))))
+    dout
+
+-- def lin388 (din: Subarray UInt64) (dout: Subarray UInt64) : Subarray UInt64 :=
+--     let dout := dout.set! 0 (UInt64.ofNat ((UInt64.toNat din[0]!
+--         ^^^ (ROTL (UInt64.toNat din[1]!) c2[0])
+--         ^^^ (ROTL (UInt64.toNat din[2]!) c2[1])
+--         ^^^ (ROTL (UInt64.toNat din[3]!) c2[2])
+--         ^^^ (ROTL (UInt64.toNat din[4]!) c2[3])
+--         ^^^ (ROTL (UInt64.toNat din[5]!) c2[4])
+--         ^^^ (ROTL (UInt64.toNat din[6]!) c2[5])
+--         ^^^ (ROTL (UInt64.toNat din[7]!) c2[6]))))
+--     let dout := dout.set! 1 (UInt64.ofNat ((UInt64.toNat din[1]!
+--         ^^^ (ROTL (UInt64.toNat din[2]!) c2[0])
+--         ^^^ (ROTL (UInt64.toNat din[3]!) c2[1])
+--         ^^^ (ROTL (UInt64.toNat din[4]!) c2[2])
+--         ^^^ (ROTL (UInt64.toNat din[5]!) c2[3])
+--         ^^^ (ROTL (UInt64.toNat din[6]!) c2[4])
+--         ^^^ (ROTL (UInt64.toNat din[7]!) c2[5])
+--         ^^^ (ROTL (UInt64.toNat dout[0]!) c2[6]))))
+--     let dout := dout.set! 2 (UInt64.ofNat ((UInt64.toNat din[2]!
+--         ^^^ (ROTL (UInt64.toNat din[3]!) c2[0])
+--         ^^^ (ROTL (UInt64.toNat din[4]!) c2[1])
+--         ^^^ (ROTL (UInt64.toNat din[5]!) c2[2])
+--         ^^^ (ROTL (UInt64.toNat din[6]!) c2[3])
+--         ^^^ (ROTL (UInt64.toNat din[7]!) c2[4])
+--         ^^^ (ROTL (UInt64.toNat dout[0]!) c2[5])
+--         ^^^ (ROTL (UInt64.toNat dout[1]!) c2[6]))))
+--     let dout := dout.set! 3 (UInt64.ofNat ((UInt64.toNat din[3]!
+--         ^^^ (ROTL (UInt64.toNat din[4]!) c2[0])
+--         ^^^ (ROTL (UInt64.toNat din[5]!) c2[1])
+--         ^^^ (ROTL (UInt64.toNat din[6]!) c2[2])
+--         ^^^ (ROTL (UInt64.toNat din[7]!) c2[3])
+--         ^^^ (ROTL (UInt64.toNat dout[0]!) c2[4])
+--         ^^^ (ROTL (UInt64.toNat dout[1]!) c2[5])
+--         ^^^ (ROTL (UInt64.toNat dout[2]!) c2[6]))))
+--     let dout := dout.set! 4 (UInt64.ofNat ((UInt64.toNat din[4]!
+--         ^^^ (ROTL (UInt64.toNat din[5]!) c2[0])
+--         ^^^ (ROTL (UInt64.toNat din[6]!) c2[1])
+--         ^^^ (ROTL (UInt64.toNat din[7]!) c2[2])
+--         ^^^ (ROTL (UInt64.toNat dout[0]!) c2[3])
+--         ^^^ (ROTL (UInt64.toNat dout[1]!) c2[4])
+--         ^^^ (ROTL (UInt64.toNat dout[2]!) c2[5])
+--         ^^^ (ROTL (UInt64.toNat dout[3]!) c2[6]))))
+--     let dout := dout.set! 5 (UInt64.ofNat ((UInt64.toNat din[5]!
+--         ^^^ (ROTL (UInt64.toNat din[6]!) c2[0])
+--         ^^^ (ROTL (UInt64.toNat din[7]!) c2[1])
+--         ^^^ (ROTL (UInt64.toNat dout[0]!) c2[2])
+--         ^^^ (ROTL (UInt64.toNat dout[1]!) c2[3])
+--         ^^^ (ROTL (UInt64.toNat dout[2]!) c2[4])
+--         ^^^ (ROTL (UInt64.toNat dout[3]!) c2[5])
+--         ^^^ (ROTL (UInt64.toNat dout[4]!) c2[6]))))
+--     let dout := dout.set! 6 (UInt64.ofNat ((UInt64.toNat din[6]!
+--         ^^^ (ROTL (UInt64.toNat din[7]!) c2[0])
+--         ^^^ (ROTL (UInt64.toNat dout[0]!) c2[1])
+--         ^^^ (ROTL (UInt64.toNat dout[1]!) c2[2])
+--         ^^^ (ROTL (UInt64.toNat dout[2]!) c2[3])
+--         ^^^ (ROTL (UInt64.toNat dout[3]!) c2[4])
+--         ^^^ (ROTL (UInt64.toNat dout[4]!) c2[5])
+--         ^^^ (ROTL (UInt64.toNat dout[5]!) c2[6]))))
+--     let dout := dout.set! 7 (UInt64.ofNat ((UInt64.toNat din[7]!
+--         ^^^ (ROTL (UInt64.toNat dout[0]!) c2[0])
+--         ^^^ (ROTL (UInt64.toNat dout[1]!) c2[1])
+--         ^^^ (ROTL (UInt64.toNat dout[2]!) c2[2])
+--         ^^^ (ROTL (UInt64.toNat dout[3]!) c2[3])
+--         ^^^ (ROTL (UInt64.toNat dout[4]!) c2[4])
+--         ^^^ (ROTL (UInt64.toNat dout[5]!) c2[5])
+--         ^^^ (ROTL (UInt64.toNat dout[6]!) c2[6]))))
+--     dout
