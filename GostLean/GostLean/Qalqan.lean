@@ -101,3 +101,36 @@ def Kexp(key: Array UInt8) (blen: Nat) (rkey: Array UInt8) : Id (Array UInt8) :=
             r1 := Array.set! r1 14 t1
         s := 0
     return rkey_local
+
+namespace Subarray
+
+def set (s : Subarray α) (i : Fin s.size) (v: α): Subarray α :=
+  have : s.start + i.val < s.array.size := by
+   apply Nat.lt_of_lt_of_le _ s.stop_le_array_size
+   have := i.isLt
+   simp only [size] at this
+   rw [Nat.add_comm]
+   exact Nat.add_lt_of_lt_sub this
+  let changed_value := s.array.set ⟨s.start + i.val,this⟩ v
+  if h : s.stop ≤ changed_value.size then {
+        array := changed_value,
+        stop := s.stop,
+        start:= s.start,
+        start_le_stop:= s.start_le_stop,
+        stop_le_array_size := h
+    } else s
+
+@[inline] def setD (s : Subarray α) (i : Nat) (v₀ : α) : Subarray α :=
+  if h : i < s.size then s.set ⟨i, h⟩ v₀ else s
+
+abbrev set! [Inhabited α] (s : Subarray α) (i : Nat) (v₀ : α) : Subarray α :=
+  setD s i v₀
+
+end Subarray
+
+def lin344 (din: Subarray UInt8) (dout: Subarray UInt8) : Subarray UInt8 :=
+    let dout := dout.set! 0 (UInt8.ofNat ((UInt8.toNat din[0]! ^^^ (ROTL (UInt8.toNat din[1]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[2]!) c0[1]) ^^^ (ROTL (UInt8.toNat din[3]!) c0[2]))))
+    let dout := dout.set! 1 (UInt8.ofNat ((UInt8.toNat din[1]! ^^^ (ROTL (UInt8.toNat din[2]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[3]!) c0[1]) ^^^ (ROTL (UInt8.toNat din[0]!) c0[2]))))
+    let dout := dout.set! 1 (UInt8.ofNat ((UInt8.toNat din[2]! ^^^ (ROTL (UInt8.toNat din[3]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[3]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[1]!) c0[2]))))
+    let dout := dout.set! 1 (UInt8.ofNat ((UInt8.toNat din[3]! ^^^ (ROTL (UInt8.toNat din[0]!) c0[0]) ^^^ (ROTL (UInt8.toNat din[3]!) c0[1]) ^^^ (ROTL (UInt8.toNat din[2]!) c0[2]))))
+    dout
