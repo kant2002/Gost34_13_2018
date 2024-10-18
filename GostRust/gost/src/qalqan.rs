@@ -381,17 +381,16 @@ pub fn AddRk(block: &[u8], rkey: &[u8], nr: usize, blen: usize, res: &mut [u8]) 
 fn encrypt(data: &[u8], rkey: &[u8], klen: usize, blen: usize, res: &mut [u8]) {
     let mut block: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let mut block2: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
-    AddRk(&data, &rkey, 0, blen as usize, &mut block);
-    sBox(&block, &mut block2, blen as usize);
-    linOp(&block2, &mut block, blen as usize);
+    AddRk(data, rkey, 0, blen, &mut block);
+    sBox(&block, &mut block2, blen);
+    linOp(&block2, &mut block, blen);
     for i in 1..RNDS!(klen) - 1 {
-        AddRkX(&block, &rkey, i as usize, blen as usize, &mut block2);
-        let b2s: &mut [u8] =
-            unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
-        sBox(&block2, b2s, blen as usize);
-        linOp(&block2, &mut block, blen as usize);
+        AddRkX(&block, rkey, i, blen, &mut block2);
+        let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen) };
+        sBox(&block2, b2s, blen);
+        linOp(&block2, &mut block, blen);
     }
-    AddRk(&block, &rkey, RNDS!(klen) - 1, blen, res);
+    AddRk(&block, rkey, RNDS!(klen) - 1, blen, res);
 }
 
 pub fn InvAddRk(block: &[u8], rkey: &[u8], nr: usize, blen: usize, res: &mut [u8]) {
@@ -631,17 +630,15 @@ pub fn InvsBox(data: &[u8], res: &mut [u8], blen: usize) {
 fn decrypt(data: &[u8], rkey: &[u8], klen: usize, blen: usize, res: &mut [u8]) {
     let mut block: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let mut block2: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
-    InvAddRk(&data, &rkey, RNDS!(klen) - 1, blen as usize, &mut block);
+    InvAddRk(data, rkey, RNDS!(klen) - 1, blen, &mut block);
     for i in (1..RNDS!(klen) - 1).rev() {
-        InvlinOp(&block, &mut block2, blen as usize);
-        let b2s: &mut [u8] =
-            unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
-        InvsBox(&block2, b2s, blen as usize);
-        AddRk(&block2, &rkey, i as usize, blen as usize, &mut block);
+        InvlinOp(&block, &mut block2, blen);
+        let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen) };
+        InvsBox(&block2, b2s, blen);
+        AddRk(&block2, rkey, i, blen, &mut block);
     }
-    InvlinOp(&block, &mut block2, blen as usize);
-    let b2s: &mut [u8] =
-        unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen as usize) };
-    InvsBox(&block2, b2s, blen as usize);
+    InvlinOp(&block, &mut block2, blen);
+    let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(block2.as_mut_ptr(), blen) };
+    InvsBox(&block2, b2s, blen);
     InvAddRk(&block2, rkey, 0, blen, res);
 }

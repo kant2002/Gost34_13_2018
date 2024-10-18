@@ -58,8 +58,8 @@ fn KexpV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &mu
         .for_each(|x| *x.1 = key[2 * x.0 + 1]);
     r0[15] = key[30];
     r0[16] = key[31];
-    Pr("Register L0\0", &mut r0, f);
-    Pr("Register L1\0", &mut r1, f);
+    Pr("Register L0\0", &r0, f);
+    Pr("Register L1\0", &r1, f);
     for r in 0..RNDS!(klen) {
         for k in 0..(blen + s) {
             let mut t0 = SB[r0[0] as usize]
@@ -95,8 +95,8 @@ fn KexpV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &mu
         }
         if s != 0 {
             fprintf!(f, "After prerun:\n");
-            Pr("Register L0\0", &mut r0, f);
-            Pr("Register L1\0", &mut r1, f);
+            Pr("Register L0\0", &r0, f);
+            Pr("Register L1\0", &r1, f);
         }
         s = 0;
     }
@@ -114,8 +114,8 @@ fn KexpVV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &m
     let addk = klen - 32;
     let mut step = 0;
     let mut s = SHIFT;
-    let mut rkey_idxes: Vec<usize> = Vec::new();
-    rkey_idxes.reserve(rkey.len());
+    let mut rkey_idxes: Vec<usize> = Vec::with_capacity(rkey.len());
+
     r0.iter_mut()
         .take(15)
         .enumerate()
@@ -179,8 +179,8 @@ fn KexpVV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &m
                         t1 = t1.wrapping_add(key[(32 + step) as usize]);
                     }
                     if step < 32 {
-                        Pr("Register L0\0", &mut r0, f);
-                        Pr("Register L1\0", &mut r1, f);
+                        Pr("Register L0\0", &r0, f);
+                        Pr("Register L1\0", &r1, f);
                     }
                     step += 1;
                 }
@@ -188,7 +188,7 @@ fn KexpVV<W: Write>(key: &mut [u8], klen: i32, blen: i32, rkey: &mut [u8], f: &m
                     fprintf!(
                         f,
                         "Output %02x (L0: %02x, L1: %02x)\n",
-                        (t0.wrapping_add(r1[4])) & 0xff,
+                        t0.wrapping_add(r1[4]),
                         t0,
                         r1[4]
                     );
@@ -222,10 +222,10 @@ fn encryptV<W: Write>(
 ) {
     let mut block: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let mut block2: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
-    Pr("Clear text", &data, f);
-    Pr("Key 0", &rkey, f);
+    Pr("Clear text", data, f);
+    Pr("Key 0", rkey, f);
     //super::cc_AddRk(&data, &rkey, 0, blen, &mut block);
-    super::qalqan::AddRk(&data, &rkey, 0, blen as usize, &mut block);
+    super::qalqan::AddRk(data, rkey, 0, blen as usize, &mut block);
     Pr("After add K0", &block, f);
     super::qalqan::sBox(&block, &mut block2, blen as usize);
     Pr("After Sub", &block2, f);
@@ -236,7 +236,7 @@ fn encryptV<W: Write>(
         fprintf!(f, "Round %d.\nKey%d:\n", i, i);
         Pr3(&rkey[(i * blen) as usize..(i * blen + blen) as usize], f);
         //super::cc_AddRkX(&block, &rkey, i, blen, &mut block2);
-        super::qalqan::AddRkX(&block, &rkey, i as usize, blen as usize, &mut block2);
+        super::qalqan::AddRkX(&block, rkey, i as usize, blen as usize, &mut block2);
         Pr("After addkey", &block2, f);
         let b2 = block2.as_mut_ptr();
         let b2s: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(b2, blen as usize) };
@@ -252,38 +252,34 @@ fn encryptV<W: Write>(
         &rkey[((RNDS!(klen) - 1) * blen) as usize..(((RNDS!(klen) - 1) * blen) + blen) as usize],
         f,
     );
-    super::qalqan::AddRk(&block, &rkey, RNDS!(klen as usize) - 1, blen as usize, res);
-    Pr("Ciphertext", &res, f);
+    super::qalqan::AddRk(&block, rkey, RNDS!(klen as usize) - 1, blen as usize, res);
+    Pr("Ciphertext", res, f);
 }
 
 fn short_test_lin<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&mut R>) {
     let mut din: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let mut dout: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
-    if src.is_none() {
-        din.iter_mut().for_each(|x| *x = super::prng::rnext());
-    } else {
-        match src {
-            Some(ref mut _fr) => {
-                if let Err(e) = _fr.read_exact(&mut din) {
-                    eprintln!("Error: {} [{}:{}]", e, file!(), line!());
-                    return;
-                }
-            }
-            None => {}
+
+    if let Some(ref mut _fr) = src {
+        if let Err(e) = _fr.read_exact(&mut din) {
+            eprintln!("Error: {} [{}:{}]", e, file!(), line!());
+            return;
         }
+    } else {
+        din.iter_mut().for_each(|x| *x = super::prng::rnext());
     }
 
     let blen_vals: [usize; BNTBLEN_CNT] = [16, 32, 64];
     fprintf!(f, "Linear operation:\n");
-    for ex in 0..blen_vals.len() {
-        fprintf!(f, "Input (%d bits):  ", blen_vals[ex] * 8);
-        for i in 0..blen_vals[ex] as usize {
-            fprintf!(f, "%02x", din[i]);
+    for ex in blen_vals.iter() {
+        fprintf!(f, "Input (%d bits):  ", *ex * 8);
+        for b in din.iter().take(*ex) {
+            fprintf!(f, "%02x", *b);
         }
-        fprintf!(f, "\nOutput (%d bits): ", blen_vals[ex] * 8);
-        super::qalqan::linOp(&din[..], &mut dout[..], blen_vals[ex]);
-        for i in 0..blen_vals[ex] as usize {
-            fprintf!(f, "%02x", dout[i]);
+        fprintf!(f, "\nOutput (%d bits): ", *ex * 8);
+        super::qalqan::linOp(&din[..], &mut dout[..], *ex);
+        for b in dout.iter().take(*ex) {
+            fprintf!(f, "%02x", *b);
         }
         fprintf!(f, "\n");
     }
@@ -294,19 +290,16 @@ fn short_test_lin<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&m
 fn short_test_sbox<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&mut R>) {
     let mut din: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let mut dout: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
-    if src.is_none() {
-        din.iter_mut().for_each(|x| *x = super::prng::rnext());
-    } else {
-        match src {
-            Some(ref mut _fr) => {
-                if let Err(e) = _fr.read_exact(&mut din) {
-                    eprintln!("Error: {} [{}:{}]", e, file!(), line!());
-                    return;
-                }
-            }
-            None => {}
+
+    if let Some(ref mut _fr) = src {
+        if let Err(e) = _fr.read_exact(&mut din) {
+            eprintln!("Error: {} [{}:{}]", e, file!(), line!());
+            return;
         }
+    } else {
+        din.iter_mut().for_each(|x| *x = super::prng::rnext());
     }
+
     dout.iter_mut()
         .enumerate()
         .for_each(|x| *x.1 = crate::qalqan::SB[din[x.0] as usize]);
@@ -323,18 +316,13 @@ fn short_test_kexp<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&
     let mut key: [u8; MAXKEYLEN as usize] = [0; MAXKEYLEN as usize];
     let mut rkey: [u8; (RNDS!(MAXKEYLEN) * MAXBLOCKLEN) as usize] =
         [0; (RNDS!(MAXKEYLEN) * MAXBLOCKLEN) as usize];
-    if src.is_none() {
-        key.iter_mut().for_each(|x| *x = super::prng::rnext());
-    } else {
-        match src {
-            Some(ref mut _fr) => {
-                if let Err(e) = _fr.read_exact(&mut key) {
-                    eprintln!("Error: {} [{}:{}]", e, file!(), line!());
-                    return;
-                }
-            }
-            None => {}
+    if let Some(ref mut _fr) = src {
+        if let Err(e) = _fr.read_exact(&mut key) {
+            eprintln!("Error: {} [{}:{}]", e, file!(), line!());
+            return;
         }
+    } else {
+        key.iter_mut().for_each(|x| *x = super::prng::rnext());
     }
     fprintf!(
         f,
@@ -354,23 +342,19 @@ fn short_test_enc<W: Write, R: Read>(f: &mut Option<&mut W>, src: &mut Option<&m
     let mut data: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let mut cipher: [u8; MAXBLOCKLEN as usize] = [0; MAXBLOCKLEN as usize];
     let blen_vals: [i32; BNTBLEN_CNT] = [16, 32, 64];
-    if src.is_none() {
+
+    if let Some(ref mut _fr) = src {
+        if let Err(e) = _fr.read_exact(&mut data) {
+            eprintln!("Error: {} [{}:{}]", e, file!(), line!());
+            return;
+        }
+        if let Err(e) = _fr.read_exact(&mut key) {
+            eprintln!("Error: {} [{}:{}]", e, file!(), line!());
+            return;
+        }
+    } else {
         data.iter_mut().for_each(|x| *x = super::prng::rnext());
         key.iter_mut().for_each(|x| *x = super::prng::rnext());
-    } else {
-        match src {
-            Some(ref mut _fr) => {
-                if let Err(e) = _fr.read_exact(&mut data) {
-                    eprintln!("Error: {} [{}:{}]", e, file!(), line!());
-                    return;
-                }
-                if let Err(e) = _fr.read_exact(&mut key) {
-                    eprintln!("Error: {} [{}:{}]", e, file!(), line!());
-                    return;
-                }
-            }
-            None => {}
-        }
     }
 
     for klen in (MINKEYLEN..MAXKEYLEN + KEYLENSTEP).step_by(KEYLENSTEP as usize) {
