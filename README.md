@@ -6,6 +6,8 @@ Here I have 3 implementations
 - C++, original one.
 - C# in GostCSharp folder
 - F# in GostFSharp folder
+- Go in GostGolang folder
+- Rust in GostRust folder
 - F* in GostFStar folder. This is highly experimental and not finished yet.
 
 # Interesting read.
