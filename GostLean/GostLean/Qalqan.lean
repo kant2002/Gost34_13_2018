@@ -1,3 +1,5 @@
+import GostLean.Support
+
 def sb : Array UInt8 :=
     #[ -- ded: OK, dif: 4, dip: 7, lin: 32, pow: 7, cor: 0, dst: 112, sac: 116..140, cyc: 256
         0xd1, 0xb5, 0xa6, 0x74, 0x2f, 0xb2, 0x03, 0x77, 0xae, 0xb3, 0x60, 0x95, 0xfd, 0xf8, 0xc7, 0xf0,
@@ -104,34 +106,6 @@ def Kexp(key: Array UInt8) (blen: Nat) (rkey: Array UInt8) : Id (Array UInt8) :=
         s := 0
     return rkey_local
 
-namespace Subarray
-
-def set (s : Subarray α) (i : Fin s.size) (v: α): Subarray α :=
-  have : s.start + i.val < s.array.size := by
-   apply Nat.lt_of_lt_of_le _ s.stop_le_array_size
-   have := i.isLt
-   simp only [size] at this
-   rw [Nat.add_comm]
-   exact Nat.add_lt_of_lt_sub this
-  let changed_value := s.array.set ⟨s.start + i.val,this⟩ v
-  --have : s.stop ≤ changed_value.size := by
-  --  sorry
-  if h : s.stop ≤ changed_value.size then {
-        array := changed_value,
-        stop := s.stop,
-        start:= s.start,
-        start_le_stop:= s.start_le_stop,
-        stop_le_array_size := h
-    } else s
-
-@[inline] def setD (s : Subarray α) (i : Nat) (v₀ : α) : Subarray α :=
-  if h : i < s.size then s.set ⟨i, h⟩ v₀ else s
-
-abbrev set! [Inhabited α] (s : Subarray α) (i : Nat) (v₀ : α) : Subarray α :=
-  setD s i v₀
-
-end Subarray
-
 def rot_4_32 x1 x2 x3 x4 :=
     (UInt32.ofNat ((UInt32.toNat x1 ^^^ (ROTL_32 x2 c0[0]) ^^^ (ROTL_32 x3 c0[1]) ^^^ (ROTL_32 x4 c0[2]))))
 
@@ -155,31 +129,38 @@ def rot_8_64 x1 x2 x3 x4 x5 x6 x7 x8 :=
         ^^^ (ROTL (UInt64.toNat x7) c1[5])
         ^^^ (ROTL (UInt64.toNat x8) c1[6])))
 
-def lin344 (din: Subarray UInt32) (dout: Subarray UInt32) : Subarray UInt32 :=
-    let dout := dout.set! 0 (rot_4_32 din[0]! din[1]! din[2]! din[3]!)
-    let dout := dout.set! 1 (rot_4_32 din[1]! din[2]! din[3]! dout[0]!)
-    let dout := dout.set! 2 (rot_4_32 din[2]! din[3]! dout[0]! dout[1]!)
-    let dout := dout.set! 3 (rot_4_32 din[3]! dout[0]! dout[1]! dout[2]!)
+def lin344 (din: Subarray2 UInt32) (dout: Subarray2 UInt32) : Subarray2 UInt32 :=
+    let dout := dout.set! 0 (rot_4_32 (din.get! UInt32 0) (din.get! UInt32 1) (din.get! UInt32 2) (din.get! UInt32 3))
+    let dout := dout.set! 1 (rot_4_32 (din.get! UInt32 1) (din.get! UInt32 2) (din.get! UInt32 3) (dout.get! UInt32 0))
+    let dout := dout.set! 2 (rot_4_32 (din.get! UInt32 2) (din.get! UInt32 3) (dout.get! UInt32 0) (dout.get! UInt32 1))
+    let dout := dout.set! 3 (rot_4_32 (din.get! UInt32 3) (dout.get! UInt32 0) (dout.get! UInt32 1) (dout.get! UInt32 2))
     dout
 
-def lin348 (din: Subarray UInt32) (dout: Subarray UInt32) : Subarray UInt32 :=
-    let dout := dout.set! 0 (rot_8_32 din[0]! din[1]! din[2]! din[3]! din[4]! din[5]! din[6]! din[7]!)
-    let dout := dout.set! 1 (rot_8_32 din[1]! din[2]! din[3]! din[4]! din[5]! din[6]! din[7]! dout[0]!)
-    let dout := dout.set! 2 (rot_8_32 din[2]! din[3]! din[4]! din[5]! din[6]! din[7]! dout[0]! dout[1]!)
-    let dout := dout.set! 3 (rot_8_32 din[3]! din[4]! din[5]! din[6]! din[7]! dout[0]! dout[1]! dout[2]!)
-    let dout := dout.set! 4 (rot_8_32 din[4]! din[5]! din[6]! din[7]! dout[0]! dout[1]! dout[2]! dout[3]!)
-    let dout := dout.set! 5 (rot_8_32 din[5]! din[6]! din[7]! dout[0]! dout[1]! dout[2]! dout[3]! dout[4]!)
-    let dout := dout.set! 6 (rot_8_32 din[6]! din[7]! dout[0]! dout[1]! dout[2]! dout[3]! dout[4]! dout[5]!)
-    let dout := dout.set! 7 (rot_8_32 din[7]! dout[0]! dout[1]! dout[2]! dout[3]! dout[4]! dout[5]! dout[6]!)
+def lin348 (din: Subarray2 UInt32) (dout: Subarray2 UInt32) : Subarray2 UInt32 :=
+    let dout := dout.set! 0 (rot_8_32 (din.get! UInt32 0) (din.get! UInt32 1) (din.get! UInt32 2) (din.get! UInt32 3) (din.get! UInt32 4) (din.get! UInt32 5) (din.get! UInt32 6) (din.get! UInt32 7))
+    let dout := dout.set! 1 (rot_8_32 (din.get! UInt32 1) (din.get! UInt32 2) (din.get! UInt32 3) (din.get! UInt32 4) (din.get! UInt32 5) (din.get! UInt32 6) (din.get! UInt32 7) (dout.get! UInt32 0))
+    let dout := dout.set! 2 (rot_8_32 (din.get! UInt32 2) (din.get! UInt32 3) (din.get! UInt32 4) (din.get! UInt32 5) (din.get! UInt32 6) (din.get! UInt32 7) (dout.get! UInt32 0) (dout.get! UInt32 1))
+    let dout := dout.set! 3 (rot_8_32 (din.get! UInt32 3) (din.get! UInt32 4) (din.get! UInt32 5) (din.get! UInt32 6) (din.get! UInt32 7) (dout.get! UInt32 0) (dout.get! UInt32 1) (dout.get! UInt32 2))
+    let dout := dout.set! 4 (rot_8_32 (din.get! UInt32 4) (din.get! UInt32 5) (din.get! UInt32 6) (din.get! UInt32 7) (dout.get! UInt32 0) (dout.get! UInt32 1) (dout.get! UInt32 2) (dout.get! UInt32 3))
+    let dout := dout.set! 5 (rot_8_32 (din.get! UInt32 5) (din.get! UInt32 6) (din.get! UInt32 7) (dout.get! UInt32 0) (dout.get! UInt32 1) (dout.get! UInt32 2) (dout.get! UInt32 3) (dout.get! UInt32 4))
+    let dout := dout.set! 6 (rot_8_32 (din.get! UInt32 6) (din.get! UInt32 7) (dout.get! UInt32 0) (dout.get! UInt32 1) (dout.get! UInt32 2) (dout.get! UInt32 3) (dout.get! UInt32 4) (dout.get! UInt32 5))
+    let dout := dout.set! 7 (rot_8_32 (din.get! UInt32 7) (dout.get! UInt32 0) (dout.get! UInt32 1) (dout.get! UInt32 2) (dout.get! UInt32 3) (dout.get! UInt32 4) (dout.get! UInt32 5) (dout.get! UInt32 6))
     dout
 
-def lin388 (din: Subarray UInt64) (dout: Subarray UInt64) : Subarray UInt64 :=
-    let dout := dout.set! 0 (rot_8_64 din[0]! din[1]! din[2]! din[3]! din[4]! din[5]! din[6]! din[7]!)
-    let dout := dout.set! 1 (rot_8_64 din[1]! din[2]! din[3]! din[4]! din[5]! din[6]! din[7]! dout[0]!)
-    let dout := dout.set! 2 (rot_8_64 din[2]! din[3]! din[4]! din[5]! din[6]! din[7]! dout[0]! dout[1]!)
-    let dout := dout.set! 3 (rot_8_64 din[3]! din[4]! din[5]! din[6]! din[7]! dout[0]! dout[1]! dout[2]!)
-    let dout := dout.set! 4 (rot_8_64 din[4]! din[5]! din[6]! din[7]! dout[0]! dout[1]! dout[2]! dout[3]!)
-    let dout := dout.set! 5 (rot_8_64 din[5]! din[6]! din[7]! dout[0]! dout[1]! dout[2]! dout[3]! dout[4]!)
-    let dout := dout.set! 6 (rot_8_64 din[6]! din[7]! dout[0]! dout[1]! dout[2]! dout[3]! dout[4]! dout[5]!)
-    let dout := dout.set! 7 (rot_8_64 din[7]! dout[0]! dout[1]! dout[2]! dout[3]! dout[4]! dout[5]! dout[6]!)
+def lin388 (din: Subarray2 UInt64) (dout: Subarray2 UInt64) : Subarray2 UInt64 :=
+    let dout := dout.set! 0 (rot_8_64 (din.get! UInt64 0) (din.get! UInt64 1) (din.get! UInt64 2) (din.get! UInt64 3) (din.get! UInt64 4) (din.get! UInt64 5) (din.get! UInt64 6) (din.get! UInt64 7))
+    let dout := dout.set! 1 (rot_8_64 (din.get! UInt64 1) (din.get! UInt64 2) (din.get! UInt64 3) (din.get! UInt64 4) (din.get! UInt64 5) (din.get! UInt64 6) (din.get! UInt64 7) (dout.get! UInt64 0))
+    let dout := dout.set! 2 (rot_8_64 (din.get! UInt64 2) (din.get! UInt64 3) (din.get! UInt64 4) (din.get! UInt64 5) (din.get! UInt64 6) (din.get! UInt64 7) (dout.get! UInt64 0) (dout.get! UInt64 1))
+    let dout := dout.set! 3 (rot_8_64 (din.get! UInt64 3) (din.get! UInt64 4) (din.get! UInt64 5) (din.get! UInt64 6) (din.get! UInt64 7) (dout.get! UInt64 0) (dout.get! UInt64 1) (dout.get! UInt64 2))
+    let dout := dout.set! 4 (rot_8_64 (din.get! UInt64 4) (din.get! UInt64 5) (din.get! UInt64 6) (din.get! UInt64 7) (dout.get! UInt64 0) (dout.get! UInt64 1) (dout.get! UInt64 2) (dout.get! UInt64 3))
+    let dout := dout.set! 5 (rot_8_64 (din.get! UInt64 5) (din.get! UInt64 6) (din.get! UInt64 7) (dout.get! UInt64 0) (dout.get! UInt64 1) (dout.get! UInt64 2) (dout.get! UInt64 3) (dout.get! UInt64 4))
+    let dout := dout.set! 6 (rot_8_64 (din.get! UInt64 6) (din.get! UInt64 7) (dout.get! UInt64 0) (dout.get! UInt64 1) (dout.get! UInt64 2) (dout.get! UInt64 3) (dout.get! UInt64 4) (dout.get! UInt64 5))
+    let dout := dout.set! 7 (rot_8_64 (din.get! UInt64 7) (dout.get! UInt64 0) (dout.get! UInt64 1) (dout.get! UInt64 2) (dout.get! UInt64 3) (dout.get! UInt64 4) (dout.get! UInt64 5) (dout.get! UInt64 6))
     dout
+
+-- def linOp (d: Subarray2 UInt8) (r: Subarray2 UInt8) (blocklen: Nat) :=
+--     match blocklen with
+--     | 16 => lin344 d r
+--     | 32 => lin384 d r
+--     | 64 => lin388 d r
+--     | _ => sorry
